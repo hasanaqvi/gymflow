@@ -80,7 +80,7 @@ function Today() {
       session_exercise_id: sessionExerciseId,
       reps: parseInt(input.reps) || 0,
       weight_kg: parseFloat(input.weight_kg) || 0,
-      duration_secs: parseInt(input.duration_secs) || 0,
+      duration_seconds: parseInt(input.duration_seconds) || 0,
       notes: input.notes || "",
     })
     const { getSessions: _ , ...rest } = { getSessions }
@@ -414,7 +414,7 @@ function Today() {
                             <span style={{ color: "#888" }}>{idx + 1}</span>
                             <span>{set.reps || "—"}</span>
                             <span>{set.weight_kg > 0 ? `${set.weight_kg}` : "—"}</span>
-                            <span>{set.duration_secs > 0 ? `${set.duration_secs}s` : "—"}</span>
+                            <span>{set.duration_seconds > 0 ? `${set.duration_seconds}s` : "—"}</span>
                             <button
                               onClick={() => handleDeleteSet(set.id, se.id)}
                               style={{
@@ -455,9 +455,9 @@ function Today() {
                       />
                       <input
                         type="number"
-                        placeholder="Secs"
-                        value={setInputs[se.id]?.duration_secs || ""}
-                        onChange={e => updateSetInput(se.id, "duration_secs", e.target.value)}
+                        placeholder="Seconds"
+                        value={setInputs[se.id]?.duration_seconds || ""}
+                        onChange={e => updateSetInput(se.id, "duration_seconds", e.target.value)}
                         style={inputStyle}
                       />
                       <button
