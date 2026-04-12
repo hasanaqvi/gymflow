@@ -60,10 +60,10 @@ def delete_session(session_id: int, db: Session = Depends(get_db)):
     session = db.query(models.Session).filter(models.Session.id == session_id).first()
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
-    for se in session.session_exercises:
-        for s in se.sets:
-            db.delete(s)
-        db.delete(se)
-    db.delete(session)
+    se_ids = [se.id for se in db.query(models.SessionExercise).filter(models.SessionExercise.session_id == session_id).all()]
+    if se_ids:
+        db.query(models.Set).filter(models.Set.session_exercise_id.in_(se_ids)).delete(synchronize_session=False)
+        db.query(models.SessionExercise).filter(models.SessionExercise.session_id == session_id).delete(synchronize_session=False)
+    db.query(models.Session).filter(models.Session.id == session_id).delete(synchronize_session=False)
     db.commit()
     return {"message": "Session deleted"}
