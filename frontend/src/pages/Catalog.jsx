@@ -4,24 +4,42 @@ import { getExercises, createExercise, updateExercise, deleteExercise } from "..
 const categoryOrder = ["Upper", "Lower", "Cardio", "Warmup", "Cooldown"]
 
 const categoryColors = {
-  Upper: { bg: "#EEEDFE", color: "#3C3489", border: "#534AB7" },
-  Lower: { bg: "#E1F5EE", color: "#085041", border: "#0F6E56" },
-  Cardio: { bg: "#FAEEDA", color: "#633806", border: "#854F0B" },
-  Warmup: { bg: "#EAF3DE", color: "#27500A", border: "#3B6D11" },
+  Upper:    { bg: "#EEEDFE", color: "#3C3489", border: "#534AB7" },
+  Lower:    { bg: "#E1F5EE", color: "#085041", border: "#0F6E56" },
+  Cardio:   { bg: "#FAEEDA", color: "#633806", border: "#854F0B" },
+  Warmup:   { bg: "#EAF3DE", color: "#27500A", border: "#3B6D11" },
   Cooldown: { bg: "#E6F1FB", color: "#0C447C", border: "#185FA5" },
 }
 
 const MUSCLE_GROUPS = {
-  Upper: ["Chest", "Back", "Shoulders", "Biceps", "Triceps", "Core"],
-  Lower: ["Quads", "Hamstrings", "Glutes", "Calves", "Adductors"],
-  Cardio: ["Full body"],
-  Warmup: ["Full body", "Shoulders", "Hips"],
+  Upper:    ["Chest", "Back", "Shoulders", "Biceps", "Triceps", "Core"],
+  Lower:    ["Quads", "Hamstrings", "Glutes", "Calves", "Adductors"],
+  Cardio:   ["Full body"],
+  Warmup:   ["Full body", "Shoulders", "Hips"],
   Cooldown: ["Full body"],
 }
 
 const emptyForm = { name: "", category: "Upper", muscle_group: "Chest", session_type: "Main", description: "" }
 
-export default function Catalog() {
+function getTheme(darkMode) {
+  return {
+    cardBg:        darkMode ? "#1e293b" : "#fff",
+    cardBorder:    darkMode ? "#334155" : "#eee",
+    inputBg:       darkMode ? "#0f172a" : "#fff",
+    inputBorder:   darkMode ? "#334155" : "#ddd",
+    textPrimary:   darkMode ? "#f1f5f9" : "#1a1a1a",
+    textSecondary: darkMode ? "#94a3b8" : "#888",
+    btnGhostBg:    darkMode ? "#1e293b" : "#fff",
+    btnGhostBorder: darkMode ? "#334155" : "#ddd",
+    btnGhostColor:  darkMode ? "#cbd5e1" : "#555",
+    tagBg:         darkMode ? "#334155" : "#f5f5f5",
+    tagColor:      darkMode ? "#cbd5e1" : "#555",
+  }
+}
+
+export default function Catalog({ darkMode }) {
+  const t = getTheme(darkMode)
+
   const [exercises, setExercises] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeCategory, setActiveCategory] = useState("Upper")
@@ -32,9 +50,7 @@ export default function Catalog() {
   const [editingId, setEditingId] = useState(null)
   const [saving, setSaving] = useState(false)
 
-  useEffect(() => {
-    load()
-  }, [])
+  useEffect(() => { load() }, [])
 
   async function load() {
     const res = await getExercises()
@@ -42,11 +58,10 @@ export default function Catalog() {
     setLoading(false)
   }
 
-  const filtered = exercises.filter(ex => {
-    const matchesCategory = ex.category === activeCategory
-    const matchesSearch = ex.name.toLowerCase().includes(search.toLowerCase())
-    return matchesCategory && matchesSearch
-  })
+  const filtered = exercises.filter(ex =>
+    ex.category === activeCategory &&
+    ex.name.toLowerCase().includes(search.toLowerCase())
+  )
 
   const grouped = filtered.reduce((acc, ex) => {
     if (!acc[ex.muscle_group]) acc[ex.muscle_group] = []
@@ -92,49 +107,70 @@ export default function Catalog() {
     setExercises(prev => prev.filter(e => e.id !== id))
   }
 
-  if (loading) return <p style={{ padding: "32px", color: "#888" }}>Loading catalog...</p>
+  if (loading) return <p style={{ color: t.textSecondary }}>Loading catalog...</p>
 
-  const c = categoryColors[activeCategory] || categoryColors.Upper
+  const inputStyle = {
+    padding: "9px 12px",
+    borderRadius: "8px",
+    border: `1px solid ${t.inputBorder}`,
+    fontSize: "14px",
+    background: t.inputBg,
+    color: t.textPrimary,
+    width: "100%",
+  }
+
+  const btnPrimary = {
+    padding: "9px 18px",
+    borderRadius: "8px",
+    border: "1px solid #534AB7",
+    background: "#534AB7",
+    color: "#fff",
+    fontSize: "14px",
+    fontWeight: "500",
+    cursor: "pointer",
+  }
+
+  const btnSecondary = {
+    padding: "9px 18px",
+    borderRadius: "8px",
+    border: "1px solid #534AB7",
+    background: "#EEEDFE",
+    color: "#3C3489",
+    fontSize: "14px",
+    fontWeight: "500",
+    cursor: "pointer",
+  }
+
+  const btnGhost = {
+    padding: "9px 18px",
+    borderRadius: "8px",
+    border: `1px solid ${t.btnGhostBorder}`,
+    background: t.btnGhostBg,
+    color: t.btnGhostColor,
+    fontSize: "14px",
+    cursor: "pointer",
+  }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <div>
-          <h1 style={{ fontSize: "22px", fontWeight: "500", marginBottom: "4px" }}>
+          <h1 style={{ fontSize: "22px", fontWeight: "600", marginBottom: "4px", color: t.textPrimary }}>
             Exercise catalog
           </h1>
-          <p style={{ color: "#888", fontSize: "14px" }}>
+          <p style={{ color: t.textSecondary, fontSize: "14px" }}>
             {exercises.length} exercises across all categories
           </p>
         </div>
         <div style={{ display: "flex", gap: "8px" }}>
           <button
             onClick={() => setEditMode(!editMode)}
-            style={{
-              padding: "8px 16px",
-              borderRadius: "8px",
-              border: editMode ? "1px solid #534AB7" : "1px solid #ddd",
-              background: editMode ? "#EEEDFE" : "#fff",
-              color: editMode ? "#3C3489" : "#555",
-              fontSize: "14px",
-              cursor: "pointer",
-            }}
+            style={editMode ? btnSecondary : btnGhost}
           >
             {editMode ? "Done editing" : "Edit catalog"}
           </button>
           {editMode && (
-            <button
-              onClick={startAdd}
-              style={{
-                padding: "8px 16px",
-                borderRadius: "8px",
-                border: "1px solid #534AB7",
-                background: "#534AB7",
-                color: "#fff",
-                fontSize: "14px",
-                cursor: "pointer",
-              }}
-            >
+            <button onClick={startAdd} style={btnPrimary}>
               + Add exercise
             </button>
           )}
@@ -146,14 +182,7 @@ export default function Catalog() {
         placeholder="Search exercises..."
         value={search}
         onChange={e => setSearch(e.target.value)}
-        style={{
-          padding: "10px 14px",
-          borderRadius: "8px",
-          border: "1px solid #ddd",
-          fontSize: "15px",
-          width: "100%",
-          background: "#fff",
-        }}
+        style={inputStyle}
       />
 
       <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
@@ -167,9 +196,9 @@ export default function Catalog() {
               style={{
                 padding: "6px 16px",
                 borderRadius: "20px",
-                border: isActive ? "1px solid " + cc.border : "1px solid #ddd",
-                background: isActive ? cc.bg : "#fff",
-                color: isActive ? cc.color : "#888",
+                border: isActive ? `1px solid ${cc.border}` : `1px solid ${t.inputBorder}`,
+                background: isActive ? cc.bg : t.btnGhostBg,
+                color: isActive ? cc.color : t.textSecondary,
                 fontSize: "14px",
                 fontWeight: isActive ? "500" : "400",
                 cursor: "pointer",
@@ -183,69 +212,74 @@ export default function Catalog() {
 
       {showForm && (
         <div style={{
-          background: "#fff",
-          border: "1px solid #ddd",
+          background: t.cardBg,
+          border: `1px solid ${t.cardBorder}`,
           borderRadius: "12px",
-          padding: "20px",
+          padding: "20px 24px",
           display: "flex",
           flexDirection: "column",
-          gap: "12px",
+          gap: "14px",
         }}>
-          <h3 style={{ fontSize: "16px", fontWeight: "500", margin: 0 }}>
+          <h3 style={{ fontSize: "16px", fontWeight: "600", margin: 0, color: t.textPrimary }}>
             {editingId ? "Edit exercise" : "Add new exercise"}
           </h3>
+
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
             <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-              <label style={{ fontSize: "13px", color: "#888" }}>Name</label>
+              <label style={{ fontSize: "13px", color: t.textSecondary }}>Name</label>
               <input
                 value={form.name}
                 onChange={e => setForm({ ...form, name: e.target.value })}
                 placeholder="Exercise name"
-                style={{ padding: "8px 12px", borderRadius: "8px", border: "1px solid #ddd", fontSize: "14px" }}
+                style={inputStyle}
               />
             </div>
+
             <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-              <label style={{ fontSize: "13px", color: "#888" }}>Category</label>
+              <label style={{ fontSize: "13px", color: t.textSecondary }}>Category</label>
               <select
                 value={form.category}
                 onChange={e => setForm({ ...form, category: e.target.value, muscle_group: MUSCLE_GROUPS[e.target.value][0] })}
-                style={{ padding: "8px 12px", borderRadius: "8px", border: "1px solid #ddd", fontSize: "14px" }}
+                style={inputStyle}
               >
                 {categoryOrder.map(cat => <option key={cat} value={cat}>{cat}</option>)}
               </select>
             </div>
+
             <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-              <label style={{ fontSize: "13px", color: "#888" }}>Muscle group</label>
+              <label style={{ fontSize: "13px", color: t.textSecondary }}>Muscle group</label>
               <select
                 value={form.muscle_group}
                 onChange={e => setForm({ ...form, muscle_group: e.target.value })}
-                style={{ padding: "8px 12px", borderRadius: "8px", border: "1px solid #ddd", fontSize: "14px" }}
+                style={inputStyle}
               >
                 {(MUSCLE_GROUPS[form.category] || []).map(mg => <option key={mg} value={mg}>{mg}</option>)}
               </select>
             </div>
+
             <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-              <label style={{ fontSize: "13px", color: "#888" }}>Session type</label>
+              <label style={{ fontSize: "13px", color: t.textSecondary }}>Session type</label>
               <select
                 value={form.session_type}
                 onChange={e => setForm({ ...form, session_type: e.target.value })}
-                style={{ padding: "8px 12px", borderRadius: "8px", border: "1px solid #ddd", fontSize: "14px" }}
+                style={inputStyle}
               >
                 {["Main", "Warmup", "Cardio", "Cooldown"].map(t => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
           </div>
+
           <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
             <button
               onClick={() => { setShowForm(false); setEditingId(null) }}
-              style={{ padding: "8px 16px", borderRadius: "8px", border: "1px solid #ddd", background: "#fff", fontSize: "14px", cursor: "pointer" }}
+              style={btnGhost}
             >
               Cancel
             </button>
             <button
               onClick={handleSave}
               disabled={saving || !form.name}
-              style={{ padding: "8px 16px", borderRadius: "8px", border: "1px solid #534AB7", background: "#534AB7", color: "#fff", fontSize: "14px", cursor: "pointer" }}
+              style={btnPrimary}
             >
               {saving ? "Saving..." : editingId ? "Save changes" : "Add exercise"}
             </button>
@@ -254,17 +288,17 @@ export default function Catalog() {
       )}
 
       {Object.keys(grouped).length === 0 && (
-        <p style={{ color: "#888" }}>No exercises found.</p>
+        <p style={{ color: t.textSecondary }}>No exercises found.</p>
       )}
 
       {Object.entries(grouped).map(([muscleGroup, exs]) => (
         <div key={muscleGroup}>
           <h3 style={{
-            fontSize: "13px",
-            fontWeight: "500",
-            color: "#888",
+            fontSize: "12px",
+            fontWeight: "600",
+            color: t.textSecondary,
             textTransform: "uppercase",
-            letterSpacing: "0.05em",
+            letterSpacing: "0.06em",
             marginBottom: "10px",
           }}>
             {muscleGroup}
@@ -274,21 +308,23 @@ export default function Catalog() {
               <div key={ex.id} style={{
                 padding: "12px 16px",
                 borderRadius: "8px",
-                border: "1px solid #eee",
-                background: "#fff",
+                border: `1px solid ${t.cardBorder}`,
+                background: t.cardBg,
                 fontSize: "15px",
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
+                color: t.textPrimary,
               }}>
                 <span>{ex.name}</span>
                 <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                   <span style={{
                     fontSize: "12px",
-                    color: categoryColors[ex.category]?.color || "#888",
-                    background: categoryColors[ex.category]?.bg || "#f5f5f5",
+                    color: categoryColors[ex.category]?.color || t.textSecondary,
+                    background: categoryColors[ex.category]?.bg || t.tagBg,
                     padding: "2px 10px",
                     borderRadius: "12px",
+                    fontWeight: "500",
                   }}>
                     {ex.muscle_group}
                   </span>
@@ -296,13 +332,29 @@ export default function Catalog() {
                     <>
                       <button
                         onClick={() => startEdit(ex)}
-                        style={{ padding: "4px 10px", borderRadius: "6px", border: "1px solid #ddd", background: "#fff", fontSize: "12px", cursor: "pointer", color: "#555" }}
+                        style={{
+                          padding: "5px 12px",
+                          borderRadius: "6px",
+                          border: `1px solid ${t.btnGhostBorder}`,
+                          background: t.btnGhostBg,
+                          fontSize: "12px",
+                          cursor: "pointer",
+                          color: t.btnGhostColor,
+                        }}
                       >
                         Edit
                       </button>
                       <button
                         onClick={() => handleDelete(ex.id)}
-                        style={{ padding: "4px 10px", borderRadius: "6px", border: "1px solid #fca5a5", background: "#fef2f2", fontSize: "12px", cursor: "pointer", color: "#dc2626" }}
+                        style={{
+                          padding: "5px 12px",
+                          borderRadius: "6px",
+                          border: "1px solid #fca5a5",
+                          background: "#fef2f2",
+                          fontSize: "12px",
+                          cursor: "pointer",
+                          color: "#dc2626",
+                        }}
                       >
                         Delete
                       </button>

@@ -6,7 +6,18 @@ const focusColors = {
   Lower: { bg: "#E1F5EE", color: "#085041", border: "#0F6E56" },
 }
 
-function Recommend() {
+function getTheme(darkMode) {
+  return {
+    cardBg:        darkMode ? "#1e293b" : "#fff",
+    cardBorder:    darkMode ? "#334155" : "#eee",
+    textPrimary:   darkMode ? "#f1f5f9" : "#1a1a1a",
+    textSecondary: darkMode ? "#94a3b8" : "#888",
+    headingColor:  darkMode ? "#e2e8f0" : "#333",
+  }
+}
+
+function Recommend({ darkMode }) {
+  const t = getTheme(darkMode)
   const [rec, setRec] = useState(null)
   const [loading, setLoading] = useState(true)
 
@@ -17,7 +28,7 @@ function Recommend() {
     })
   }, [])
 
-  if (loading) return <p style={{ color: "#888" }}>Loading recommendation...</p>
+  if (loading) return <p style={{ color: t.textSecondary }}>Loading recommendation...</p>
 
   const colors = focusColors[rec.recommended_focus] || focusColors.Upper
 
@@ -30,16 +41,16 @@ function Recommend() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
       <div>
-        <h1 style={{ fontSize: "22px", fontWeight: "500", marginBottom: "4px" }}>
+        <h1 style={{ fontSize: "22px", fontWeight: "600", marginBottom: "4px", color: t.textPrimary }}>
           What to do today
         </h1>
-        <p style={{ color: "#888", fontSize: "14px" }}>
+        <p style={{ color: t.textSecondary, fontSize: "14px" }}>
           Based on your recent sessions
         </p>
       </div>
 
       <div style={{
-        padding: "20px",
+        padding: "20px 24px",
         borderRadius: "12px",
         background: colors.bg,
         border: `1px solid ${colors.border}`,
@@ -47,11 +58,7 @@ function Recommend() {
         flexDirection: "column",
         gap: "8px",
       }}>
-        <div style={{
-          fontSize: "28px",
-          fontWeight: "500",
-          color: colors.color,
-        }}>
+        <div style={{ fontSize: "28px", fontWeight: "600", color: colors.color }}>
           {rec.recommended_focus} body
         </div>
         <div style={{ fontSize: "14px", color: colors.color, opacity: 0.8 }}>
@@ -62,9 +69,9 @@ function Recommend() {
       <div>
         <h2 style={{
           fontSize: "16px",
-          fontWeight: "500",
+          fontWeight: "600",
           marginBottom: "16px",
-          color: "#333",
+          color: t.headingColor,
         }}>
           Suggested exercises
         </h2>
@@ -72,11 +79,11 @@ function Recommend() {
         {Object.entries(grouped).map(([muscleGroup, exs]) => (
           <div key={muscleGroup} style={{ marginBottom: "20px" }}>
             <h3 style={{
-              fontSize: "13px",
-              fontWeight: "500",
-              color: "#888",
+              fontSize: "12px",
+              fontWeight: "600",
+              color: t.textSecondary,
               textTransform: "uppercase",
-              letterSpacing: "0.05em",
+              letterSpacing: "0.06em",
               marginBottom: "10px",
             }}>
               {muscleGroup}
@@ -86,9 +93,10 @@ function Recommend() {
                 <div key={ex.id} style={{
                   padding: "12px 16px",
                   borderRadius: "8px",
-                  border: "1px solid #eee",
-                  background: "#fff",
+                  border: `1px solid ${t.cardBorder}`,
+                  background: t.cardBg,
                   fontSize: "15px",
+                  color: t.textPrimary,
                 }}>
                   {ex.name}
                 </div>

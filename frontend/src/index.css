@@ -9,6 +9,7 @@ body {
   background: #fafafa;
   color: #1a1a1a;
   line-height: 1.6;
+  transition: background 0.2s ease, color 0.2s ease;
 }
 
 button {
