@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { getExercises } from "../api"
+import { getExercises, createExercise, updateExercise, deleteExercise } from "../api"
 
 const categoryOrder = ["Upper", "Lower", "Cardio", "Warmup", "Cooldown"]
 
@@ -11,18 +11,36 @@ const categoryColors = {
   Cooldown: { bg: "#E6F1FB", color: "#0C447C", border: "#185FA5" },
 }
 
-function Catalog() {
+const MUSCLE_GROUPS = {
+  Upper: ["Chest", "Back", "Shoulders", "Biceps", "Triceps", "Core"],
+  Lower: ["Quads", "Hamstrings", "Glutes", "Calves", "Adductors"],
+  Cardio: ["Full body"],
+  Warmup: ["Full body", "Shoulders", "Hips"],
+  Cooldown: ["Full body"],
+}
+
+const emptyForm = { name: "", category: "Upper", muscle_group: "Chest", session_type: "Main", description: "" }
+
+export default function Catalog() {
   const [exercises, setExercises] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeCategory, setActiveCategory] = useState("Upper")
   const [search, setSearch] = useState("")
+  const [editMode, setEditMode] = useState(false)
+  const [showForm, setShowForm] = useState(false)
+  const [form, setForm] = useState(emptyForm)
+  const [editingId, setEditingId] = useState(null)
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    getExercises().then(res => {
-      setExercises(res.data)
-      setLoading(false)
-    })
+    load()
   }, [])
+
+  async function load() {
+    const res = await getExercises()
+    setExercises(res.data)
+    setLoading(false)
+  }
 
   const filtered = exercises.filter(ex => {
     const matchesCategory = ex.category === activeCategory
@@ -36,17 +54,91 @@ function Catalog() {
     return acc
   }, {})
 
-  if (loading) return <p style={{ color: "#888" }}>Loading catalog...</p>
+  function startEdit(ex) {
+    setForm({
+      name: ex.name,
+      category: ex.category,
+      muscle_group: ex.muscle_group,
+      session_type: ex.session_type,
+      description: ex.description || "",
+    })
+    setEditingId(ex.id)
+    setShowForm(true)
+  }
+
+  function startAdd() {
+    setForm({ ...emptyForm, category: activeCategory, muscle_group: MUSCLE_GROUPS[activeCategory][0] })
+    setEditingId(null)
+    setShowForm(true)
+  }
+
+  async function handleSave() {
+    setSaving(true)
+    if (editingId) {
+      await updateExercise(editingId, form)
+    } else {
+      await createExercise(form)
+    }
+    await load()
+    setShowForm(false)
+    setEditingId(null)
+    setForm(emptyForm)
+    setSaving(false)
+  }
+
+  async function handleDelete(id) {
+    if (!confirm("Delete this exercise?")) return
+    await deleteExercise(id)
+    setExercises(prev => prev.filter(e => e.id !== id))
+  }
+
+  if (loading) return <p style={{ padding: "32px", color: "#888" }}>Loading catalog...</p>
+
+  const c = categoryColors[activeCategory] || categoryColors.Upper
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-      <div>
-        <h1 style={{ fontSize: "22px", fontWeight: "500", marginBottom: "4px" }}>
-          Exercise catalog
-        </h1>
-        <p style={{ color: "#888", fontSize: "14px" }}>
-          {exercises.length} exercises across all categories
-        </p>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+        <div>
+          <h1 style={{ fontSize: "22px", fontWeight: "500", marginBottom: "4px" }}>
+            Exercise catalog
+          </h1>
+          <p style={{ color: "#888", fontSize: "14px" }}>
+            {exercises.length} exercises across all categories
+          </p>
+        </div>
+        <div style={{ display: "flex", gap: "8px" }}>
+          <button
+            onClick={() => setEditMode(!editMode)}
+            style={{
+              padding: "8px 16px",
+              borderRadius: "8px",
+              border: editMode ? "1px solid #534AB7" : "1px solid #ddd",
+              background: editMode ? "#EEEDFE" : "#fff",
+              color: editMode ? "#3C3489" : "#555",
+              fontSize: "14px",
+              cursor: "pointer",
+            }}
+          >
+            {editMode ? "Done editing" : "Edit catalog"}
+          </button>
+          {editMode && (
+            <button
+              onClick={startAdd}
+              style={{
+                padding: "8px 16px",
+                borderRadius: "8px",
+                border: "1px solid #534AB7",
+                background: "#534AB7",
+                color: "#fff",
+                fontSize: "14px",
+                cursor: "pointer",
+              }}
+            >
+              + Add exercise
+            </button>
+          )}
+        </div>
       </div>
 
       <input
@@ -66,7 +158,7 @@ function Catalog() {
 
       <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
         {categoryOrder.map(cat => {
-          const c = categoryColors[cat]
+          const cc = categoryColors[cat]
           const isActive = activeCategory === cat
           return (
             <button
@@ -75,12 +167,12 @@ function Catalog() {
               style={{
                 padding: "6px 16px",
                 borderRadius: "20px",
-                border: `1px solid ${isActive ? c.border : "#ddd"}`,
-                background: isActive ? c.bg : "#fff",
-                color: isActive ? c.color : "#888",
+                border: isActive ? "1px solid " + cc.border : "1px solid #ddd",
+                background: isActive ? cc.bg : "#fff",
+                color: isActive ? cc.color : "#888",
                 fontSize: "14px",
                 fontWeight: isActive ? "500" : "400",
-                transition: "all 0.15s",
+                cursor: "pointer",
               }}
             >
               {cat}
@@ -88,6 +180,78 @@ function Catalog() {
           )
         })}
       </div>
+
+      {showForm && (
+        <div style={{
+          background: "#fff",
+          border: "1px solid #ddd",
+          borderRadius: "12px",
+          padding: "20px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "12px",
+        }}>
+          <h3 style={{ fontSize: "16px", fontWeight: "500", margin: 0 }}>
+            {editingId ? "Edit exercise" : "Add new exercise"}
+          </h3>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+              <label style={{ fontSize: "13px", color: "#888" }}>Name</label>
+              <input
+                value={form.name}
+                onChange={e => setForm({ ...form, name: e.target.value })}
+                placeholder="Exercise name"
+                style={{ padding: "8px 12px", borderRadius: "8px", border: "1px solid #ddd", fontSize: "14px" }}
+              />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+              <label style={{ fontSize: "13px", color: "#888" }}>Category</label>
+              <select
+                value={form.category}
+                onChange={e => setForm({ ...form, category: e.target.value, muscle_group: MUSCLE_GROUPS[e.target.value][0] })}
+                style={{ padding: "8px 12px", borderRadius: "8px", border: "1px solid #ddd", fontSize: "14px" }}
+              >
+                {categoryOrder.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+              </select>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+              <label style={{ fontSize: "13px", color: "#888" }}>Muscle group</label>
+              <select
+                value={form.muscle_group}
+                onChange={e => setForm({ ...form, muscle_group: e.target.value })}
+                style={{ padding: "8px 12px", borderRadius: "8px", border: "1px solid #ddd", fontSize: "14px" }}
+              >
+                {(MUSCLE_GROUPS[form.category] || []).map(mg => <option key={mg} value={mg}>{mg}</option>)}
+              </select>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+              <label style={{ fontSize: "13px", color: "#888" }}>Session type</label>
+              <select
+                value={form.session_type}
+                onChange={e => setForm({ ...form, session_type: e.target.value })}
+                style={{ padding: "8px 12px", borderRadius: "8px", border: "1px solid #ddd", fontSize: "14px" }}
+              >
+                {["Main", "Warmup", "Cardio", "Cooldown"].map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+            <button
+              onClick={() => { setShowForm(false); setEditingId(null) }}
+              style={{ padding: "8px 16px", borderRadius: "8px", border: "1px solid #ddd", background: "#fff", fontSize: "14px", cursor: "pointer" }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={saving || !form.name}
+              style={{ padding: "8px 16px", borderRadius: "8px", border: "1px solid #534AB7", background: "#534AB7", color: "#fff", fontSize: "14px", cursor: "pointer" }}
+            >
+              {saving ? "Saving..." : editingId ? "Save changes" : "Add exercise"}
+            </button>
+          </div>
+        </div>
+      )}
 
       {Object.keys(grouped).length === 0 && (
         <p style={{ color: "#888" }}>No exercises found.</p>
@@ -118,15 +282,33 @@ function Catalog() {
                 alignItems: "center",
               }}>
                 <span>{ex.name}</span>
-                <span style={{
-                  fontSize: "12px",
-                  color: categoryColors[ex.category]?.color || "#888",
-                  background: categoryColors[ex.category]?.bg || "#f5f5f5",
-                  padding: "2px 10px",
-                  borderRadius: "12px",
-                }}>
-                  {ex.muscle_group}
-                </span>
+                <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                  <span style={{
+                    fontSize: "12px",
+                    color: categoryColors[ex.category]?.color || "#888",
+                    background: categoryColors[ex.category]?.bg || "#f5f5f5",
+                    padding: "2px 10px",
+                    borderRadius: "12px",
+                  }}>
+                    {ex.muscle_group}
+                  </span>
+                  {editMode && (
+                    <>
+                      <button
+                        onClick={() => startEdit(ex)}
+                        style={{ padding: "4px 10px", borderRadius: "6px", border: "1px solid #ddd", background: "#fff", fontSize: "12px", cursor: "pointer", color: "#555" }}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(ex.id)}
+                        style={{ padding: "4px 10px", borderRadius: "6px", border: "1px solid #fca5a5", background: "#fef2f2", fontSize: "12px", cursor: "pointer", color: "#dc2626" }}
+                      >
+                        Delete
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -135,5 +317,3 @@ function Catalog() {
     </div>
   )
 }
-
-export default Catalog
