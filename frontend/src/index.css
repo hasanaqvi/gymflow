@@ -20,3 +20,14 @@ button {
 input, select, textarea {
   font-family: inherit;
 }
+
+/* Ensure tap targets on mobile */
+@media (max-width: 767px) {
+  button {
+    min-height: 44px;
+  }
+  input, select, textarea {
+    min-height: 44px;
+    font-size: 16px; /* prevents iOS auto-zoom */
+  }
+}

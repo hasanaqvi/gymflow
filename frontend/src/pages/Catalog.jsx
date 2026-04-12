@@ -23,21 +23,21 @@ const emptyForm = { name: "", category: "Upper", muscle_group: "Chest", session_
 
 function getTheme(darkMode) {
   return {
-    cardBg:        darkMode ? "#1e293b" : "#fff",
-    cardBorder:    darkMode ? "#334155" : "#eee",
-    inputBg:       darkMode ? "#0f172a" : "#fff",
-    inputBorder:   darkMode ? "#334155" : "#ddd",
-    textPrimary:   darkMode ? "#f1f5f9" : "#1a1a1a",
-    textSecondary: darkMode ? "#94a3b8" : "#888",
-    btnGhostBg:    darkMode ? "#1e293b" : "#fff",
+    cardBg:         darkMode ? "#1e293b" : "#fff",
+    cardBorder:     darkMode ? "#334155" : "#eee",
+    inputBg:        darkMode ? "#0f172a" : "#fff",
+    inputBorder:    darkMode ? "#334155" : "#ddd",
+    textPrimary:    darkMode ? "#f1f5f9" : "#1a1a1a",
+    textSecondary:  darkMode ? "#94a3b8" : "#888",
+    btnGhostBg:     darkMode ? "#1e293b" : "#fff",
     btnGhostBorder: darkMode ? "#334155" : "#ddd",
     btnGhostColor:  darkMode ? "#cbd5e1" : "#555",
-    tagBg:         darkMode ? "#334155" : "#f5f5f5",
-    tagColor:      darkMode ? "#cbd5e1" : "#555",
+    tagBg:          darkMode ? "#334155" : "#f5f5f5",
+    tagColor:       darkMode ? "#cbd5e1" : "#555",
   }
 }
 
-export default function Catalog({ darkMode }) {
+export default function Catalog({ darkMode, isMobile }) {
   const t = getTheme(darkMode)
 
   const [exercises, setExercises] = useState([])
@@ -109,6 +109,8 @@ export default function Catalog({ darkMode }) {
 
   if (loading) return <p style={{ color: t.textSecondary }}>Loading catalog...</p>
 
+  const cardPad = isMobile ? "16px" : "20px 24px"
+
   const inputStyle = {
     padding: "9px 12px",
     borderRadius: "8px",
@@ -128,6 +130,8 @@ export default function Catalog({ darkMode }) {
     fontSize: "14px",
     fontWeight: "500",
     cursor: "pointer",
+    minHeight: "44px",
+    whiteSpace: "nowrap",
   }
 
   const btnSecondary = {
@@ -139,6 +143,8 @@ export default function Catalog({ darkMode }) {
     fontSize: "14px",
     fontWeight: "500",
     cursor: "pointer",
+    minHeight: "44px",
+    whiteSpace: "nowrap",
   }
 
   const btnGhost = {
@@ -149,11 +155,20 @@ export default function Catalog({ darkMode }) {
     color: t.btnGhostColor,
     fontSize: "14px",
     cursor: "pointer",
+    minHeight: "44px",
+    whiteSpace: "nowrap",
   }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+      {/* Header row */}
+      <div style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: isMobile ? "flex-start" : "center",
+        gap: "12px",
+        flexWrap: isMobile ? "wrap" : "nowrap",
+      }}>
         <div>
           <h1 style={{ fontSize: "22px", fontWeight: "600", marginBottom: "4px", color: t.textPrimary }}>
             Exercise catalog
@@ -162,21 +177,22 @@ export default function Catalog({ darkMode }) {
             {exercises.length} exercises across all categories
           </p>
         </div>
-        <div style={{ display: "flex", gap: "8px" }}>
+        <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
           <button
             onClick={() => setEditMode(!editMode)}
             style={editMode ? btnSecondary : btnGhost}
           >
-            {editMode ? "Done editing" : "Edit catalog"}
+            {editMode ? "Done" : "Edit catalog"}
           </button>
           {editMode && (
             <button onClick={startAdd} style={btnPrimary}>
-              + Add exercise
+              + Add
             </button>
           )}
         </div>
       </div>
 
+      {/* Search */}
       <input
         type="text"
         placeholder="Search exercises..."
@@ -185,6 +201,7 @@ export default function Catalog({ darkMode }) {
         style={inputStyle}
       />
 
+      {/* Category filter pills — flex-wrap handles mobile */}
       <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
         {categoryOrder.map(cat => {
           const cc = categoryColors[cat]
@@ -194,7 +211,7 @@ export default function Catalog({ darkMode }) {
               key={cat}
               onClick={() => setActiveCategory(cat)}
               style={{
-                padding: "6px 16px",
+                padding: "7px 16px",
                 borderRadius: "20px",
                 border: isActive ? `1px solid ${cc.border}` : `1px solid ${t.inputBorder}`,
                 background: isActive ? cc.bg : t.btnGhostBg,
@@ -202,6 +219,7 @@ export default function Catalog({ darkMode }) {
                 fontSize: "14px",
                 fontWeight: isActive ? "500" : "400",
                 cursor: "pointer",
+                minHeight: "36px",
               }}
             >
               {cat}
@@ -210,12 +228,13 @@ export default function Catalog({ darkMode }) {
         })}
       </div>
 
+      {/* Add / Edit form */}
       {showForm && (
         <div style={{
           background: t.cardBg,
           border: `1px solid ${t.cardBorder}`,
           borderRadius: "12px",
-          padding: "20px 24px",
+          padding: cardPad,
           display: "flex",
           flexDirection: "column",
           gap: "14px",
@@ -224,7 +243,12 @@ export default function Catalog({ darkMode }) {
             {editingId ? "Edit exercise" : "Add new exercise"}
           </h3>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+          {/* 2-col on desktop, 1-col on mobile */}
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
+            gap: "12px",
+          }}>
             <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
               <label style={{ fontSize: "13px", color: t.textSecondary }}>Name</label>
               <input
@@ -264,7 +288,7 @@ export default function Catalog({ darkMode }) {
                 onChange={e => setForm({ ...form, session_type: e.target.value })}
                 style={inputStyle}
               >
-                {["Main", "Warmup", "Cardio", "Cooldown"].map(t => <option key={t} value={t}>{t}</option>)}
+                {["Main", "Warmup", "Cardio", "Cooldown"].map(st => <option key={st} value={st}>{st}</option>)}
               </select>
             </div>
           </div>
@@ -306,7 +330,7 @@ export default function Catalog({ darkMode }) {
           <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
             {exs.map(ex => (
               <div key={ex.id} style={{
-                padding: "12px 16px",
+                padding: isMobile ? "12px" : "12px 16px",
                 borderRadius: "8px",
                 border: `1px solid ${t.cardBorder}`,
                 background: t.cardBg,
@@ -314,32 +338,40 @@ export default function Catalog({ darkMode }) {
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
+                gap: "8px",
                 color: t.textPrimary,
               }}>
-                <span>{ex.name}</span>
-                <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                  <span style={{
-                    fontSize: "12px",
-                    color: categoryColors[ex.category]?.color || t.textSecondary,
-                    background: categoryColors[ex.category]?.bg || t.tagBg,
-                    padding: "2px 10px",
-                    borderRadius: "12px",
-                    fontWeight: "500",
-                  }}>
-                    {ex.muscle_group}
-                  </span>
+                <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {ex.name}
+                </span>
+                <div style={{ display: "flex", gap: "6px", alignItems: "center", flexShrink: 0 }}>
+                  {!isMobile && (
+                    <span style={{
+                      fontSize: "12px",
+                      color: categoryColors[ex.category]?.color || t.textSecondary,
+                      background: categoryColors[ex.category]?.bg || t.tagBg,
+                      padding: "2px 10px",
+                      borderRadius: "12px",
+                      fontWeight: "500",
+                      whiteSpace: "nowrap",
+                    }}>
+                      {ex.muscle_group}
+                    </span>
+                  )}
                   {editMode && (
                     <>
                       <button
                         onClick={() => startEdit(ex)}
                         style={{
-                          padding: "5px 12px",
+                          padding: "6px 12px",
                           borderRadius: "6px",
                           border: `1px solid ${t.btnGhostBorder}`,
                           background: t.btnGhostBg,
-                          fontSize: "12px",
+                          fontSize: "13px",
                           cursor: "pointer",
                           color: t.btnGhostColor,
+                          minHeight: "36px",
+                          whiteSpace: "nowrap",
                         }}
                       >
                         Edit
@@ -347,13 +379,15 @@ export default function Catalog({ darkMode }) {
                       <button
                         onClick={() => handleDelete(ex.id)}
                         style={{
-                          padding: "5px 12px",
+                          padding: "6px 12px",
                           borderRadius: "6px",
                           border: "1px solid #fca5a5",
                           background: "#fef2f2",
-                          fontSize: "12px",
+                          fontSize: "13px",
                           cursor: "pointer",
                           color: "#dc2626",
+                          minHeight: "36px",
+                          whiteSpace: "nowrap",
                         }}
                       >
                         Delete

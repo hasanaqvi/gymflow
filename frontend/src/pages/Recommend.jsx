@@ -16,7 +16,7 @@ function getTheme(darkMode) {
   }
 }
 
-function Recommend({ darkMode }) {
+function Recommend({ darkMode, isMobile }) {
   const t = getTheme(darkMode)
   const [rec, setRec] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -50,7 +50,7 @@ function Recommend({ darkMode }) {
       </div>
 
       <div style={{
-        padding: "20px 24px",
+        padding: isMobile ? "16px" : "20px 24px",
         borderRadius: "12px",
         background: colors.bg,
         border: `1px solid ${colors.border}`,
@@ -58,7 +58,7 @@ function Recommend({ darkMode }) {
         flexDirection: "column",
         gap: "8px",
       }}>
-        <div style={{ fontSize: "28px", fontWeight: "600", color: colors.color }}>
+        <div style={{ fontSize: isMobile ? "24px" : "28px", fontWeight: "600", color: colors.color }}>
           {rec.recommended_focus} body
         </div>
         <div style={{ fontSize: "14px", color: colors.color, opacity: 0.8 }}>
@@ -91,12 +91,15 @@ function Recommend({ darkMode }) {
             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
               {exs.map(ex => (
                 <div key={ex.id} style={{
-                  padding: "12px 16px",
+                  padding: isMobile ? "14px" : "12px 16px",
                   borderRadius: "8px",
                   border: `1px solid ${t.cardBorder}`,
                   background: t.cardBg,
                   fontSize: "15px",
                   color: t.textPrimary,
+                  minHeight: "44px",
+                  display: "flex",
+                  alignItems: "center",
                 }}>
                   {ex.name}
                 </div>

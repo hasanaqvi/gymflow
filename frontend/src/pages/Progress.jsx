@@ -18,7 +18,7 @@ function getTheme(darkMode) {
   }
 }
 
-function Progress({ darkMode }) {
+function Progress({ darkMode, isMobile }) {
   const t = getTheme(darkMode)
   const [sessions, setSessions] = useState([])
   const [loading, setLoading] = useState(true)
@@ -52,14 +52,14 @@ function Progress({ darkMode }) {
 
       {sessions.length === 0 && (
         <div style={{
-          padding: "40px",
+          padding: "40px 20px",
           textAlign: "center",
           color: t.textSecondary,
           background: t.cardBg,
           borderRadius: "12px",
           border: `1px solid ${t.cardBorder}`,
         }}>
-          No sessions yet — log your first workout on the Today page.
+          No sessions yet — log your first workout on the Today tab.
         </div>
       )}
 
@@ -76,7 +76,7 @@ function Progress({ darkMode }) {
               background: t.cardBg,
               borderRadius: "12px",
               border: `1px solid ${t.cardBorder}`,
-              padding: "16px 20px",
+              padding: isMobile ? "14px" : "16px 20px",
               display: "flex",
               flexDirection: "column",
               gap: "10px",
@@ -86,7 +86,7 @@ function Progress({ darkMode }) {
                 justifyContent: "space-between",
                 alignItems: "flex-start",
               }}>
-                <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
                   <span style={{
                     padding: "4px 12px",
                     borderRadius: "20px",
@@ -94,6 +94,7 @@ function Progress({ darkMode }) {
                     color: colors.color,
                     fontSize: "13px",
                     fontWeight: "500",
+                    whiteSpace: "nowrap",
                   }}>
                     {session.focus}
                   </span>
@@ -107,17 +108,25 @@ function Progress({ darkMode }) {
                     background: "none",
                     border: "none",
                     color: t.textSecondary,
-                    fontSize: "18px",
+                    fontSize: "20px",
                     cursor: "pointer",
                     padding: "0 4px",
                     lineHeight: 1,
+                    minHeight: "unset",
+                    flexShrink: 0,
                   }}
                 >
                   ×
                 </button>
               </div>
 
-              <div style={{ display: "flex", gap: "20px", fontSize: "13px", color: t.textSecondary }}>
+              <div style={{
+                display: "flex",
+                gap: isMobile ? "12px" : "20px",
+                fontSize: "13px",
+                color: t.textSecondary,
+                flexWrap: "wrap",
+              }}>
                 <span>{exerciseCount} exercises</span>
                 <span>{setCount} sets</span>
                 {session.duration_mins > 0 && <span>{session.duration_mins} mins</span>}
@@ -129,7 +138,7 @@ function Progress({ darkMode }) {
                   {session.session_exercises.map(se => (
                     <span key={se.id} style={{
                       fontSize: "12px",
-                      padding: "2px 10px",
+                      padding: "3px 10px",
                       borderRadius: "20px",
                       background: t.tagBg,
                       color: t.tagColor,

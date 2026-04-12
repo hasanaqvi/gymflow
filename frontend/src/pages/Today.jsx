@@ -21,20 +21,20 @@ const focusOptions = ["Upper", "Lower"]
 
 function getTheme(darkMode) {
   return {
-    cardBg:       darkMode ? "#1e293b" : "#fff",
-    cardBorder:   darkMode ? "#334155" : "#eee",
-    inputBg:      darkMode ? "#0f172a" : "#fff",
-    inputBorder:  darkMode ? "#334155" : "#ddd",
-    textPrimary:  darkMode ? "#f1f5f9" : "#1a1a1a",
-    textSecondary: darkMode ? "#94a3b8" : "#888",
-    rowBg:        darkMode ? "#0f172a" : "#fafafa",
-    btnGhostBg:   darkMode ? "#1e293b" : "#fff",
+    cardBg:         darkMode ? "#1e293b" : "#fff",
+    cardBorder:     darkMode ? "#334155" : "#eee",
+    inputBg:        darkMode ? "#0f172a" : "#fff",
+    inputBorder:    darkMode ? "#334155" : "#ddd",
+    textPrimary:    darkMode ? "#f1f5f9" : "#1a1a1a",
+    textSecondary:  darkMode ? "#94a3b8" : "#888",
+    rowBg:          darkMode ? "#0f172a" : "#fafafa",
+    btnGhostBg:     darkMode ? "#1e293b" : "#fff",
     btnGhostBorder: darkMode ? "#334155" : "#ddd",
     btnGhostColor:  darkMode ? "#cbd5e1" : "#333",
   }
 }
 
-function Today({ darkMode }) {
+function Today({ darkMode, isMobile }) {
   const t = getTheme(darkMode)
 
   const [exercises, setExercises] = useState([])
@@ -49,7 +49,6 @@ function Today({ darkMode }) {
 
   const [activePhase, setActivePhase] = useState("Main")
   const [selectedExercise, setSelectedExercise] = useState("")
-
   const [setInputs, setSetInputs] = useState({})
 
   useEffect(() => {
@@ -121,10 +120,7 @@ function Today({ darkMode }) {
   function updateSetInput(sessionExerciseId, field, value) {
     setSetInputs(prev => ({
       ...prev,
-      [sessionExerciseId]: {
-        ...(prev[sessionExerciseId] || {}),
-        [field]: value,
-      },
+      [sessionExerciseId]: { ...(prev[sessionExerciseId] || {}), [field]: value },
     }))
   }
 
@@ -139,6 +135,8 @@ function Today({ darkMode }) {
   }, {})
 
   if (loading) return <p style={{ color: t.textSecondary }}>Loading...</p>
+
+  const cardPad = isMobile ? "16px" : "20px 24px"
 
   const inputStyle = {
     padding: "9px 12px",
@@ -159,6 +157,7 @@ function Today({ darkMode }) {
     fontSize: "14px",
     fontWeight: "500",
     cursor: "pointer",
+    minHeight: "44px",
   }
 
   const btnSecondary = {
@@ -170,6 +169,8 @@ function Today({ darkMode }) {
     fontSize: "14px",
     fontWeight: "500",
     cursor: "pointer",
+    minHeight: "44px",
+    whiteSpace: "nowrap",
   }
 
   const btnGhost = {
@@ -180,20 +181,22 @@ function Today({ darkMode }) {
     color: t.btnGhostColor,
     fontSize: "14px",
     cursor: "pointer",
+    minHeight: "44px",
+    whiteSpace: "nowrap",
   }
 
   const card = {
     background: t.cardBg,
     borderRadius: "12px",
     border: `1px solid ${t.cardBorder}`,
-    padding: "20px 24px",
+    padding: cardPad,
     display: "flex",
     flexDirection: "column",
     gap: "16px",
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "28px" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: isMobile ? "20px" : "28px" }}>
       <div>
         <h1 style={{ fontSize: "22px", fontWeight: "600", marginBottom: "4px", color: t.textPrimary }}>
           Today
@@ -219,11 +222,16 @@ function Today({ darkMode }) {
                   key={f}
                   onClick={() => setFocus(f)}
                   style={{
-                    ...btnGhost,
+                    flex: isMobile ? 1 : undefined,
+                    padding: "9px 20px",
+                    borderRadius: "8px",
                     border: focus === f ? "1px solid #534AB7" : `1px solid ${t.inputBorder}`,
                     background: focus === f ? "#EEEDFE" : t.btnGhostBg,
                     color: focus === f ? "#3C3489" : t.btnGhostColor,
                     fontWeight: focus === f ? "500" : "400",
+                    fontSize: "14px",
+                    cursor: "pointer",
+                    minHeight: "44px",
                   }}
                 >
                   {f} body
@@ -252,7 +260,7 @@ function Today({ darkMode }) {
               placeholder="e.g. 60"
               value={durationMins}
               onChange={e => setDurationMins(e.target.value)}
-              style={{ ...inputStyle, width: "140px" }}
+              style={{ ...inputStyle, width: isMobile ? "100%" : "140px" }}
             />
           </div>
 
@@ -271,7 +279,7 @@ function Today({ darkMode }) {
             <button
               onClick={handleCreateSession}
               disabled={creating}
-              style={btnPrimary}
+              style={{ ...btnPrimary, width: isMobile ? "100%" : undefined }}
             >
               {creating ? "Starting..." : "Start session"}
             </button>
@@ -285,10 +293,11 @@ function Today({ darkMode }) {
             background: "#EEEDFE",
             borderRadius: "12px",
             border: "1px solid #534AB7",
-            padding: "16px 24px",
+            padding: isMobile ? "14px 16px" : "16px 24px",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
+            gap: "12px",
           }}>
             <div>
               <div style={{ fontSize: "18px", fontWeight: "600", color: "#3C3489" }}>
@@ -307,6 +316,7 @@ function Today({ darkMode }) {
               borderRadius: "20px",
               border: "1px solid #534AB7",
               fontWeight: "500",
+              flexShrink: 0,
             }}>
               Active
             </div>
@@ -317,6 +327,7 @@ function Today({ darkMode }) {
               Add exercise
             </h2>
 
+            {/* Phase filter pills */}
             <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
               {phases.map(phase => {
                 const c = phaseColors[phase]
@@ -326,7 +337,7 @@ function Today({ darkMode }) {
                     key={phase}
                     onClick={() => setActivePhase(phase)}
                     style={{
-                      padding: "6px 16px",
+                      padding: "8px 16px",
                       borderRadius: "20px",
                       border: `1px solid ${isActive ? c.border : t.inputBorder}`,
                       background: isActive ? c.bg : t.btnGhostBg,
@@ -334,6 +345,7 @@ function Today({ darkMode }) {
                       fontSize: "13px",
                       fontWeight: isActive ? "500" : "400",
                       cursor: "pointer",
+                      minHeight: "36px",
                     }}
                   >
                     {phase}
@@ -342,7 +354,8 @@ function Today({ darkMode }) {
               })}
             </div>
 
-            <div style={{ display: "flex", gap: "8px" }}>
+            {/* Exercise selector */}
+            <div style={{ display: "flex", gap: "8px", flexDirection: isMobile ? "column" : "row" }}>
               <select
                 value={selectedExercise}
                 onChange={e => setSelectedExercise(e.target.value)}
@@ -356,7 +369,7 @@ function Today({ darkMode }) {
                 ))}
               </select>
               <button onClick={handleAddExercise} style={btnSecondary}>
-                Add
+                Add exercise
               </button>
             </div>
           </div>
@@ -382,7 +395,7 @@ function Today({ darkMode }) {
                     background: t.cardBg,
                     borderRadius: "12px",
                     border: `1px solid ${t.cardBorder}`,
-                    padding: "16px 20px",
+                    padding: cardPad,
                     display: "flex",
                     flexDirection: "column",
                     gap: "12px",
@@ -391,29 +404,30 @@ function Today({ darkMode }) {
                       {se.exercise?.name}
                     </div>
 
+                    {/* Logged sets */}
                     {se.sets?.length > 0 && (
                       <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                         <div style={{
                           display: "grid",
-                          gridTemplateColumns: "32px 1fr 1fr 1fr 32px",
-                          gap: "8px",
+                          gridTemplateColumns: "28px 1fr 1fr 1fr 32px",
+                          gap: "6px",
                           fontSize: "12px",
                           color: t.textSecondary,
-                          padding: "0 4px",
+                          padding: "0 2px",
                         }}>
                           <span>#</span>
                           <span>Reps</span>
-                          <span>Weight (kg)</span>
-                          <span>Duration (s)</span>
+                          <span>kg</span>
+                          <span>Secs</span>
                           <span></span>
                         </div>
                         {se.sets.map((set, idx) => (
                           <div key={set.id} style={{
                             display: "grid",
-                            gridTemplateColumns: "32px 1fr 1fr 1fr 32px",
-                            gap: "8px",
+                            gridTemplateColumns: "28px 1fr 1fr 1fr 32px",
+                            gap: "6px",
                             fontSize: "14px",
-                            padding: "6px 4px",
+                            padding: "8px 2px",
                             borderRadius: "6px",
                             background: t.rowBg,
                             alignItems: "center",
@@ -421,7 +435,7 @@ function Today({ darkMode }) {
                           }}>
                             <span style={{ color: t.textSecondary }}>{idx + 1}</span>
                             <span>{set.reps || "—"}</span>
-                            <span>{set.weight_kg > 0 ? `${set.weight_kg}` : "—"}</span>
+                            <span>{set.weight_kg > 0 ? set.weight_kg : "—"}</span>
                             <span>{set.duration_seconds > 0 ? `${set.duration_seconds}s` : "—"}</span>
                             <button
                               onClick={() => handleDeleteSet(set.id, se.id)}
@@ -429,10 +443,11 @@ function Today({ darkMode }) {
                                 background: "none",
                                 border: "none",
                                 color: t.textSecondary,
-                                fontSize: "16px",
+                                fontSize: "18px",
                                 cursor: "pointer",
                                 padding: "0",
                                 lineHeight: 1,
+                                minHeight: "unset",
                               }}
                             >
                               ×
@@ -442,37 +457,67 @@ function Today({ darkMode }) {
                       </div>
                     )}
 
-                    <div style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr 1fr auto",
-                      gap: "8px",
-                      alignItems: "center",
-                    }}>
-                      <input
-                        type="number"
-                        placeholder="Reps"
-                        value={setInputs[se.id]?.reps || ""}
-                        onChange={e => updateSetInput(se.id, "reps", e.target.value)}
-                        style={inputStyle}
-                      />
-                      <input
-                        type="number"
-                        placeholder="kg"
-                        value={setInputs[se.id]?.weight_kg || ""}
-                        onChange={e => updateSetInput(se.id, "weight_kg", e.target.value)}
-                        style={inputStyle}
-                      />
-                      <input
-                        type="number"
-                        placeholder="Seconds"
-                        value={setInputs[se.id]?.duration_seconds || ""}
-                        onChange={e => updateSetInput(se.id, "duration_seconds", e.target.value)}
-                        style={inputStyle}
-                      />
-                      <button onClick={() => handleAddSet(se.id)} style={btnGhost}>
-                        + Set
-                      </button>
-                    </div>
+                    {/* Set input row — 2×2 on mobile, 4-col on desktop */}
+                    {isMobile ? (
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                        <input
+                          type="number"
+                          placeholder="Reps"
+                          value={setInputs[se.id]?.reps || ""}
+                          onChange={e => updateSetInput(se.id, "reps", e.target.value)}
+                          style={inputStyle}
+                        />
+                        <input
+                          type="number"
+                          placeholder="kg"
+                          value={setInputs[se.id]?.weight_kg || ""}
+                          onChange={e => updateSetInput(se.id, "weight_kg", e.target.value)}
+                          style={inputStyle}
+                        />
+                        <input
+                          type="number"
+                          placeholder="Seconds"
+                          value={setInputs[se.id]?.duration_seconds || ""}
+                          onChange={e => updateSetInput(se.id, "duration_seconds", e.target.value)}
+                          style={inputStyle}
+                        />
+                        <button onClick={() => handleAddSet(se.id)} style={{ ...btnSecondary, padding: "9px 12px" }}>
+                          + Log set
+                        </button>
+                      </div>
+                    ) : (
+                      <div style={{
+                        display: "grid",
+                        gridTemplateColumns: "1fr 1fr 1fr auto",
+                        gap: "8px",
+                        alignItems: "center",
+                      }}>
+                        <input
+                          type="number"
+                          placeholder="Reps"
+                          value={setInputs[se.id]?.reps || ""}
+                          onChange={e => updateSetInput(se.id, "reps", e.target.value)}
+                          style={inputStyle}
+                        />
+                        <input
+                          type="number"
+                          placeholder="kg"
+                          value={setInputs[se.id]?.weight_kg || ""}
+                          onChange={e => updateSetInput(se.id, "weight_kg", e.target.value)}
+                          style={inputStyle}
+                        />
+                        <input
+                          type="number"
+                          placeholder="Seconds"
+                          value={setInputs[se.id]?.duration_seconds || ""}
+                          onChange={e => updateSetInput(se.id, "duration_seconds", e.target.value)}
+                          style={inputStyle}
+                        />
+                        <button onClick={() => handleAddSet(se.id)} style={btnGhost}>
+                          + Set
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
