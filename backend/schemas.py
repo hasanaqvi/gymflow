@@ -23,6 +23,7 @@ class SetBase(BaseModel):
     weight_kg: Optional[float] = 0.0
     duration_secs: Optional[int] = 0
     notes: Optional[str] = ""
+    rpe: Optional[str] = None
 
 class SetCreate(SetBase):
     session_exercise_id: int

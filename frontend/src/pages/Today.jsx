@@ -19,6 +19,51 @@ const phaseColors = {
 
 const focusOptions = ["Upper", "Lower"]
 
+const RPE_OPTIONS = [
+  { value: "Very Easy", abbr: "VE", text: "#15803d", bg: "#dcfce7" },
+  { value: "Easy",      abbr: "E",  text: "#065f46", bg: "#d1fae5" },
+  { value: "Medium",    abbr: "M",  text: "#92400e", bg: "#fef3c7" },
+  { value: "Hard",      abbr: "H",  text: "#9a3412", bg: "#ffedd5" },
+  { value: "Very Hard", abbr: "VH", text: "#991b1b", bg: "#fee2e2" },
+]
+
+function RpeBadge({ rpe }) {
+  const opt = RPE_OPTIONS.find(o => o.value === rpe)
+  if (!opt) return null
+  return (
+    <span style={{
+      fontSize: "11px",
+      fontWeight: "600",
+      padding: "2px 7px",
+      borderRadius: "10px",
+      background: opt.bg,
+      color: opt.text,
+      whiteSpace: "nowrap",
+      letterSpacing: "0.02em",
+    }}>
+      {opt.abbr}
+    </span>
+  )
+}
+
+function todayStr() {
+  return new Date().toISOString().split("T")[0]
+}
+
+function formatDisplayDate(dateStr) {
+  const [y, m, d] = dateStr.split("-").map(Number)
+  return new Date(y, m - 1, d).toLocaleDateString("en-US", {
+    weekday: "long", year: "numeric", month: "long", day: "numeric",
+  })
+}
+
+function navigateDate(dateStr, delta) {
+  const [y, m, d] = dateStr.split("-").map(Number)
+  const dt = new Date(y, m - 1, d)
+  dt.setDate(dt.getDate() + delta)
+  return dt.toISOString().split("T")[0]
+}
+
 function getTheme(darkMode) {
   return {
     cardBg:         darkMode ? "#1e293b" : "#fff",
@@ -37,10 +82,12 @@ function getTheme(darkMode) {
 function Today({ darkMode, isMobile }) {
   const t = getTheme(darkMode)
 
+  const [selectedDate, setSelectedDate] = useState(todayStr)
   const [exercises, setExercises] = useState([])
   const [session, setSession] = useState(null)
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
+  const [dateLoading, setDateLoading] = useState(false)
 
   const [focus, setFocus] = useState("Upper")
   const [energyLevel, setEnergyLevel] = useState(3)
@@ -51,21 +98,30 @@ function Today({ darkMode, isMobile }) {
   const [selectedExercise, setSelectedExercise] = useState("")
   const [setInputs, setSetInputs] = useState({})
 
+  // Initial load
   useEffect(() => {
     Promise.all([getExercises(), getSessions()]).then(([exRes, seRes]) => {
       setExercises(exRes.data)
-      const today = new Date().toISOString().split("T")[0]
-      const todaySession = seRes.data.find(s => s.date === today)
-      if (todaySession) setSession(todaySession)
+      setSession(seRes.data.find(s => s.date === selectedDate) || null)
       setLoading(false)
     })
   }, [])
 
+  // Reload session whenever date changes (after initial load)
+  useEffect(() => {
+    if (loading) return
+    setDateLoading(true)
+    setSetInputs({})
+    getSessions().then(res => {
+      setSession(res.data.find(s => s.date === selectedDate) || null)
+      setDateLoading(false)
+    })
+  }, [selectedDate])
+
   async function handleCreateSession() {
     setCreating(true)
-    const today = new Date().toISOString().split("T")[0]
     const res = await createSession({
-      date: today,
+      date: selectedDate,
       focus,
       energy_level: energyLevel,
       notes,
@@ -96,12 +152,11 @@ function Today({ darkMode, isMobile }) {
       session_exercise_id: sessionExerciseId,
       reps: parseInt(input.reps) || 0,
       weight_kg: parseFloat(input.weight_kg) || 0,
-      duration_seconds: parseInt(input.duration_seconds) || 0,
-      notes: input.notes || "",
+      duration_secs: parseInt(input.duration_secs) || 0,
+      rpe: input.rpe || null,
     })
     const seRes = await getSessions()
-    const today = new Date().toISOString().split("T")[0]
-    const updated = seRes.data.find(s => s.date === today)
+    const updated = seRes.data.find(s => s.date === selectedDate)
     if (updated) setSession(updated)
     setSetInputs(prev => ({ ...prev, [sessionExerciseId]: {} }))
   }
@@ -136,6 +191,7 @@ function Today({ darkMode, isMobile }) {
 
   if (loading) return <p style={{ color: t.textSecondary }}>Loading...</p>
 
+  const isToday = selectedDate === todayStr()
   const cardPad = isMobile ? "16px" : "20px 24px"
 
   const inputStyle = {
@@ -197,21 +253,76 @@ function Today({ darkMode, isMobile }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: isMobile ? "20px" : "28px" }}>
+
+      {/* Date navigation */}
       <div>
-        <h1 style={{ fontSize: "22px", fontWeight: "600", marginBottom: "4px", color: t.textPrimary }}>
-          Today
+        <h1 style={{ fontSize: "22px", fontWeight: "600", marginBottom: "12px", color: t.textPrimary }}>
+          {isToday ? "Today" : formatDisplayDate(selectedDate)}
         </h1>
-        <p style={{ color: t.textSecondary, fontSize: "14px" }}>
-          {new Date().toLocaleDateString("en-DE", {
-            weekday: "long", year: "numeric", month: "long", day: "numeric",
-          })}
-        </p>
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+          flexWrap: isMobile ? "wrap" : "nowrap",
+        }}>
+          <button
+            onClick={() => setSelectedDate(d => navigateDate(d, -1))}
+            style={{ ...btnGhost, padding: "7px 14px", minHeight: "36px", fontSize: "18px" }}
+            title="Previous day"
+          >
+            ‹
+          </button>
+          <input
+            type="date"
+            value={selectedDate}
+            max={todayStr()}
+            onChange={e => e.target.value && setSelectedDate(e.target.value)}
+            style={{
+              ...inputStyle,
+              width: isMobile ? "100%" : "auto",
+              flex: isMobile ? 1 : undefined,
+              minHeight: "36px",
+              padding: "6px 10px",
+            }}
+          />
+          <button
+            onClick={() => setSelectedDate(d => navigateDate(d, 1))}
+            disabled={isToday}
+            style={{
+              ...btnGhost,
+              padding: "7px 14px",
+              minHeight: "36px",
+              fontSize: "18px",
+              opacity: isToday ? 0.35 : 1,
+            }}
+            title="Next day"
+          >
+            ›
+          </button>
+          {!isToday && (
+            <button
+              onClick={() => setSelectedDate(todayStr())}
+              style={{ ...btnGhost, minHeight: "36px", padding: "6px 14px", fontSize: "13px" }}
+            >
+              Today
+            </button>
+          )}
+          {dateLoading && (
+            <span style={{ fontSize: "13px", color: t.textSecondary }}>Loading...</span>
+          )}
+        </div>
+        {!isToday && (
+          <p style={{ color: t.textSecondary, fontSize: "13px", marginTop: "6px" }}>
+            {formatDisplayDate(selectedDate)}
+          </p>
+        )}
       </div>
 
-      {!session && (
+      {/* Start session form */}
+      {!session && !dateLoading && (
         <div style={card}>
           <h2 style={{ fontSize: "16px", fontWeight: "600", color: t.textPrimary }}>
-            Start a new session
+            {isToday ? "Start today's session" : "Log a session for this date"}
           </h2>
 
           <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -267,7 +378,7 @@ function Today({ darkMode, isMobile }) {
           <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
             <label style={{ fontSize: "13px", color: t.textSecondary }}>Notes</label>
             <textarea
-              placeholder="Any notes before you start..."
+              placeholder="Any notes..."
               value={notes}
               onChange={e => setNotes(e.target.value)}
               rows={2}
@@ -287,8 +398,10 @@ function Today({ darkMode, isMobile }) {
         </div>
       )}
 
+      {/* Active session */}
       {session && (
         <>
+          {/* Session header */}
           <div style={{
             background: "#EEEDFE",
             borderRadius: "12px",
@@ -318,16 +431,16 @@ function Today({ darkMode, isMobile }) {
               fontWeight: "500",
               flexShrink: 0,
             }}>
-              Active
+              {isToday ? "Active" : "Logged"}
             </div>
           </div>
 
+          {/* Add exercise */}
           <div style={card}>
             <h2 style={{ fontSize: "16px", fontWeight: "600", color: t.textPrimary }}>
               Add exercise
             </h2>
 
-            {/* Phase filter pills */}
             <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
               {phases.map(phase => {
                 const c = phaseColors[phase]
@@ -354,7 +467,6 @@ function Today({ darkMode, isMobile }) {
               })}
             </div>
 
-            {/* Exercise selector */}
             <div style={{ display: "flex", gap: "8px", flexDirection: isMobile ? "column" : "row" }}>
               <select
                 value={selectedExercise}
@@ -374,6 +486,7 @@ function Today({ darkMode, isMobile }) {
             </div>
           </div>
 
+          {/* Exercises by phase */}
           {phases.map(phase => {
             const exs = sessionExercisesByPhase[phase]
             if (exs.length === 0) return null
@@ -390,136 +503,186 @@ function Today({ darkMode, isMobile }) {
                   {phase}
                 </h2>
 
-                {exs.map(se => (
-                  <div key={se.id} style={{
-                    background: t.cardBg,
-                    borderRadius: "12px",
-                    border: `1px solid ${t.cardBorder}`,
-                    padding: cardPad,
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "12px",
-                  }}>
-                    <div style={{ fontSize: "15px", fontWeight: "600", color: t.textPrimary }}>
-                      {se.exercise?.name}
-                    </div>
+                {exs.map(se => {
+                  const inp = setInputs[se.id] || {}
+                  const setCount = se.sets?.length || 0
+                  return (
+                    <div key={se.id} style={{
+                      background: t.cardBg,
+                      borderRadius: "12px",
+                      border: `1px solid ${t.cardBorder}`,
+                      padding: cardPad,
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "14px",
+                    }}>
+                      <div style={{ fontSize: "15px", fontWeight: "600", color: t.textPrimary }}>
+                        {se.exercise?.name}
+                      </div>
 
-                    {/* Logged sets */}
-                    {se.sets?.length > 0 && (
-                      <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                        <div style={{
-                          display: "grid",
-                          gridTemplateColumns: "28px 1fr 1fr 1fr 32px",
-                          gap: "6px",
-                          fontSize: "12px",
-                          color: t.textSecondary,
-                          padding: "0 2px",
-                        }}>
-                          <span>#</span>
-                          <span>Reps</span>
-                          <span>kg</span>
-                          <span>Secs</span>
-                          <span></span>
-                        </div>
-                        {se.sets.map((set, idx) => (
-                          <div key={set.id} style={{
+                      {/* Logged sets */}
+                      {setCount > 0 && (
+                        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                          {/* Header */}
+                          <div style={{
                             display: "grid",
-                            gridTemplateColumns: "28px 1fr 1fr 1fr 32px",
+                            gridTemplateColumns: "24px 1fr 1fr 1fr auto 24px",
                             gap: "6px",
-                            fontSize: "14px",
-                            padding: "8px 2px",
-                            borderRadius: "6px",
-                            background: t.rowBg,
-                            alignItems: "center",
-                            color: t.textPrimary,
+                            fontSize: "11px",
+                            fontWeight: "600",
+                            color: t.textSecondary,
+                            textTransform: "uppercase",
+                            letterSpacing: "0.05em",
+                            padding: "0 2px",
                           }}>
-                            <span style={{ color: t.textSecondary }}>{idx + 1}</span>
-                            <span>{set.reps || "—"}</span>
-                            <span>{set.weight_kg > 0 ? set.weight_kg : "—"}</span>
-                            <span>{set.duration_seconds > 0 ? `${set.duration_seconds}s` : "—"}</span>
+                            <span>#</span>
+                            <span>Reps</span>
+                            <span>kg</span>
+                            <span>Secs</span>
+                            <span>RPE</span>
+                            <span></span>
+                          </div>
+
+                          {se.sets.map((set, idx) => (
+                            <div key={set.id} style={{
+                              display: "grid",
+                              gridTemplateColumns: "24px 1fr 1fr 1fr auto 24px",
+                              gap: "6px",
+                              fontSize: "14px",
+                              padding: "8px 2px",
+                              borderRadius: "6px",
+                              background: t.rowBg,
+                              alignItems: "center",
+                              color: t.textPrimary,
+                            }}>
+                              <span style={{ color: t.textSecondary, fontSize: "12px" }}>{idx + 1}</span>
+                              <span>{set.reps > 0 ? set.reps : "—"}</span>
+                              <span>{set.weight_kg > 0 ? `${set.weight_kg}` : "—"}</span>
+                              <span>{set.duration_secs > 0 ? `${set.duration_secs}s` : "—"}</span>
+                              <span><RpeBadge rpe={set.rpe} /></span>
+                              <button
+                                onClick={() => handleDeleteSet(set.id, se.id)}
+                                style={{
+                                  background: "none",
+                                  border: "none",
+                                  color: t.textSecondary,
+                                  fontSize: "16px",
+                                  cursor: "pointer",
+                                  padding: "0",
+                                  lineHeight: 1,
+                                  minHeight: "unset",
+                                }}
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Set input form */}
+                      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                        <div style={{
+                          fontSize: "12px",
+                          fontWeight: "600",
+                          color: t.textSecondary,
+                          textTransform: "uppercase",
+                          letterSpacing: "0.05em",
+                        }}>
+                          Log Set {setCount + 1}
+                        </div>
+
+                        {isMobile ? (
+                          // Mobile: 2×2 grid + full-width button
+                          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                              <input
+                                type="number"
+                                placeholder="Reps"
+                                value={inp.reps || ""}
+                                onChange={e => updateSetInput(se.id, "reps", e.target.value)}
+                                style={inputStyle}
+                              />
+                              <input
+                                type="number"
+                                placeholder="kg"
+                                value={inp.weight_kg || ""}
+                                onChange={e => updateSetInput(se.id, "weight_kg", e.target.value)}
+                                style={inputStyle}
+                              />
+                              <input
+                                type="number"
+                                placeholder="Seconds"
+                                value={inp.duration_secs || ""}
+                                onChange={e => updateSetInput(se.id, "duration_secs", e.target.value)}
+                                style={inputStyle}
+                              />
+                              <select
+                                value={inp.rpe || ""}
+                                onChange={e => updateSetInput(se.id, "rpe", e.target.value)}
+                                style={inputStyle}
+                              >
+                                <option value="">RPE</option>
+                                {RPE_OPTIONS.map(o => (
+                                  <option key={o.value} value={o.value}>{o.value}</option>
+                                ))}
+                              </select>
+                            </div>
                             <button
-                              onClick={() => handleDeleteSet(set.id, se.id)}
-                              style={{
-                                background: "none",
-                                border: "none",
-                                color: t.textSecondary,
-                                fontSize: "18px",
-                                cursor: "pointer",
-                                padding: "0",
-                                lineHeight: 1,
-                                minHeight: "unset",
-                              }}
+                              onClick={() => handleAddSet(se.id)}
+                              style={{ ...btnSecondary, width: "100%" }}
                             >
-                              ×
+                              + Log Set {setCount + 1}
                             </button>
                           </div>
-                        ))}
+                        ) : (
+                          // Desktop: single row
+                          <div style={{
+                            display: "grid",
+                            gridTemplateColumns: "1fr 1fr 1fr 1fr auto",
+                            gap: "8px",
+                            alignItems: "center",
+                          }}>
+                            <input
+                              type="number"
+                              placeholder="Reps"
+                              value={inp.reps || ""}
+                              onChange={e => updateSetInput(se.id, "reps", e.target.value)}
+                              style={inputStyle}
+                            />
+                            <input
+                              type="number"
+                              placeholder="kg"
+                              value={inp.weight_kg || ""}
+                              onChange={e => updateSetInput(se.id, "weight_kg", e.target.value)}
+                              style={inputStyle}
+                            />
+                            <input
+                              type="number"
+                              placeholder="Seconds"
+                              value={inp.duration_secs || ""}
+                              onChange={e => updateSetInput(se.id, "duration_secs", e.target.value)}
+                              style={inputStyle}
+                            />
+                            <select
+                              value={inp.rpe || ""}
+                              onChange={e => updateSetInput(se.id, "rpe", e.target.value)}
+                              style={inputStyle}
+                            >
+                              <option value="">RPE (optional)</option>
+                              {RPE_OPTIONS.map(o => (
+                                <option key={o.value} value={o.value}>{o.value}</option>
+                              ))}
+                            </select>
+                            <button onClick={() => handleAddSet(se.id)} style={btnGhost}>
+                              + Set
+                            </button>
+                          </div>
+                        )}
                       </div>
-                    )}
-
-                    {/* Set input row — 2×2 on mobile, 4-col on desktop */}
-                    {isMobile ? (
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
-                        <input
-                          type="number"
-                          placeholder="Reps"
-                          value={setInputs[se.id]?.reps || ""}
-                          onChange={e => updateSetInput(se.id, "reps", e.target.value)}
-                          style={inputStyle}
-                        />
-                        <input
-                          type="number"
-                          placeholder="kg"
-                          value={setInputs[se.id]?.weight_kg || ""}
-                          onChange={e => updateSetInput(se.id, "weight_kg", e.target.value)}
-                          style={inputStyle}
-                        />
-                        <input
-                          type="number"
-                          placeholder="Seconds"
-                          value={setInputs[se.id]?.duration_seconds || ""}
-                          onChange={e => updateSetInput(se.id, "duration_seconds", e.target.value)}
-                          style={inputStyle}
-                        />
-                        <button onClick={() => handleAddSet(se.id)} style={{ ...btnSecondary, padding: "9px 12px" }}>
-                          + Log set
-                        </button>
-                      </div>
-                    ) : (
-                      <div style={{
-                        display: "grid",
-                        gridTemplateColumns: "1fr 1fr 1fr auto",
-                        gap: "8px",
-                        alignItems: "center",
-                      }}>
-                        <input
-                          type="number"
-                          placeholder="Reps"
-                          value={setInputs[se.id]?.reps || ""}
-                          onChange={e => updateSetInput(se.id, "reps", e.target.value)}
-                          style={inputStyle}
-                        />
-                        <input
-                          type="number"
-                          placeholder="kg"
-                          value={setInputs[se.id]?.weight_kg || ""}
-                          onChange={e => updateSetInput(se.id, "weight_kg", e.target.value)}
-                          style={inputStyle}
-                        />
-                        <input
-                          type="number"
-                          placeholder="Seconds"
-                          value={setInputs[se.id]?.duration_seconds || ""}
-                          onChange={e => updateSetInput(se.id, "duration_seconds", e.target.value)}
-                          style={inputStyle}
-                        />
-                        <button onClick={() => handleAddSet(se.id)} style={btnGhost}>
-                          + Set
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ))}
+                    </div>
+                  )
+                })}
               </div>
             )
           })}

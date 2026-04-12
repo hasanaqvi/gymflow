@@ -50,5 +50,6 @@ class Set(Base):
     weight_kg = Column(Float, default=0.0)
     duration_secs = Column(Integer, default=0)
     notes = Column(Text, default="")
+    rpe = Column(String, nullable=True)
 
     session_exercise = relationship("SessionExercise", back_populates="sets")
