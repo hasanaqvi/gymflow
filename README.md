@@ -1,6 +1,6 @@
 # GymFlow
 
-A smart workout tracker built around an Upper/Lower split for personal use purposes. Log your sessions, track sets and reps, and get intelligent recommendations for what to train next based on what you've done recently.
+A smart workout tracker built around an Upper or Lower split for personal use purposes. Log your sessions, track sets and reps, and get intelligent recommendations for what to train next based on what you've done recently.
 
 ## Tech Stack
 
